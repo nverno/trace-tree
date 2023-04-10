@@ -1,9 +1,9 @@
-;;; trace-output.el --- Major mode to visualize elisp trace output -*- lexical-binding: t; -*-
+;;; trace-tree.el --- Major mode to visualize elisp trace output as tree widget -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
-;; URL: https://github.com/nverno/trace-mode
+;; URL: https://github.com/nverno/trace-tree
 ;; Package-Requires: 
 ;; Created:  10 April 2023
 
@@ -28,10 +28,10 @@
 ;;
 ;;; Description:
 ;;
-;;  Major mode to view elisp trace output.
-;; 
-;;  Overrides `trace-make-advice' from trace.el to view trace output using
-;;  interactive tree widgets (collapse/expand children).
+;;  Major mode to view elisp trace output using interactive tree widgets
+;;  (collapse/expand children).
+;;
+;;  Overrides `trace-make-advice' from trace.el.
 ;;
 ;;; Installation:
 ;;
@@ -58,16 +58,16 @@
   (level 0)
   (children ()))
 
-(defun trace-output-buffer (name)
+(defun trace-tree-buffer (name)
   "Get trace output buffer."
   (if-let (buf (get-buffer name))
       buf
     (with-current-buffer (get-buffer-create name)
-      (trace-output-mode)
+      (trace-tree-mode)
       (current-buffer))))
 
 ;;; modified `trace-make-advice' to build trace tree
-(defun trace-output-make-advice (function buffer background context)
+(defun trace-tree-make-advice (function buffer background context)
   "Build the piece of advice to be added to trace FUNCTION.
 FUNCTION is the name of the traced function.
 BUFFER is the buffer where the trace should be printed.
@@ -76,7 +76,7 @@ CONTEXT if non-nil should be a function that returns extra info that should
 be printed along with the arguments in the trace."
   (lambda (body &rest args)
     (let* ((trace-level (1+ trace-level))
-           (trace-buffer (trace-output-buffer buffer))
+           (trace-buffer (trace-tree-buffer buffer))
            (deactivate-mark nil)         ;Protect deactivate-mark.
            (ctx (funcall context))
            (parent trace--node)
@@ -99,21 +99,21 @@ be printed along with the arguments in the trace."
                   (unless background (trace--display-buffer trace-buffer))
                   (goto-char (point-max))
                   (setq trace-results (cons trace--node trace-results))
-                  (trace-output-render-trace trace--node))))))
+                  (trace-tree-render-trace trace--node))))))
         (car result)))))
 
 
 ;; Override `trace-make-advice' to adapt tracing functions to create tree
-(advice-add 'trace-make-advice :override #'trace-output-make-advice)
-;; (defalias 'trace-make-advice 'trace-output-make-advice
+(advice-add 'trace-make-advice :override #'trace-tree-make-advice)
+;; (defalias 'trace-make-advice 'trace-tree-make-advice
 ;;   "Override `trace-make-advice'")
 
-(defun trace-output-render-trace (trace-result)
-  (widget-create (trace-output-render-node trace-result)))
+(defun trace-tree-render-trace (trace-result)
+  (widget-create (trace-tree-render-node trace-result)))
 
 ;;; XXX: better format for function arguments/results
 ;;       hide/show lengthy ones
-(defun trace-output-render-node (node)
+(defun trace-tree-render-node (node)
   `(tree-widget
     :tag ,(format "%S%s -> %S%s"
                   (cons (trace-node-function node) (trace-node-args node))
@@ -123,23 +123,23 @@ be printed along with the arguments in the trace."
     :open t
     ,@(->> node
            (trace-node-children)
-           (-map 'trace-output-render-node))
+           (-map 'trace-tree-render-node))
     ;; (tree-widget
     ;;  :tag ,(format "<- %S%s" (trace-node-result node) (trace-node-exit-context node))
     ;;  :icon nil)
     ))
 
-(defun trace-output-revert-buffer (_ignore-auto _noconfirm)
+(defun trace-tree-revert-buffer (_ignore-auto _noconfirm)
   "Rebuild trace output."
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (--each-r trace-results (widget-create (trace-output-render-node it))))
+    (--each-r trace-results (widget-create (trace-tree-render-node it))))
   (widget-setup))
 
-(defun trace-output-collapse-all (&optional arg)
+(defun trace-tree-collapse-all (&optional arg)
   "Collapse all top-level trace nodes.
 With ARG, expand all top-level trace nodes."
-  (interactive "P" trace-output-mode)
+  (interactive "P" trace-tree-mode)
   (save-excursion
     (goto-char (point-min))
     (while (condition-case nil
@@ -153,7 +153,7 @@ With ARG, expand all top-level trace nodes."
                  t)
              (error nil)))))
 
-(defun trace-output-clear-results ()
+(defun trace-tree-clear-results ()
   "Clear trace results."
   (interactive)
   (when-let ((buf (get-buffer trace-buffer)))
@@ -165,29 +165,29 @@ With ARG, expand all top-level trace nodes."
 ;;; XXX: widget interactions: untrace function/goto source
 ;; D => delete node
 ;; list currently traced functions
-(defvar-keymap trace-output-mode-map
+(defvar-keymap trace-tree-mode-map
   :doc "Keymap used in trace output buffer."
   :parent (make-composed-keymap special-mode-map widget-keymap)
   "n"       #'next-line
   "p"       #'previous-line
-  "C"       #'trace-output-collapse-all
+  "C"       #'trace-tree-collapse-all
   "C-c C-q" #'untrace-all
-  "C-c C-k" #'trace-output-clear-results)
+  "C-c C-k" #'trace-tree-clear-results)
 
-(define-derived-mode trace-output-mode special-mode "TraceOutput"
+(define-derived-mode trace-tree-mode special-mode "TraceOutput"
   "Major mode for displaying trace results.
 
-\\{trace-output-mode-map}"
+\\{trace-tree-mode-map}"
   :interactive nil
   :syntax-table emacs-lisp-mode-syntax-table
   :abbrev-table nil
   (setq trace-results nil)
   (setq truncate-lines t)
-  (setq-local revert-buffer-function #'trace-output-revert-buffer))
+  (setq-local revert-buffer-function #'trace-tree-revert-buffer))
 
-(provide 'trace-mode)
+(provide 'trace-tree)
 ;; Local Variables:
 ;; coding: utf-8
 ;; indent-tabs-mode: nil
 ;; End:
-;;; trace-output.el ends here
+;;; trace-tree.el ends here
