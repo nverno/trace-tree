@@ -35,8 +35,12 @@
 ;;
 ;;; Installation:
 ;;
-;; ```lisp
-;; ```
+;;  When this file is loaded, it will simply override (using advice)
+;;  `trace-make-advice' so the output from the `trace-*' functions in trace.el will
+;;  be handled by this mode, instead of as plaintext.
+;;
+;;  Place file on `load-path' and `require' somewhere before
+;;  calling tracing functions.
 ;;
 ;;; Code:
 (eval-when-compile
