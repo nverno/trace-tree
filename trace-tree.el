@@ -127,7 +127,8 @@ be printed along with the arguments in the trace."
     :open t
     ,@(->> node
            (trace-node-children)
-           (-map 'trace-tree-render-node))
+           (-map 'trace-tree-render-node)
+           (nreverse))
     ;; (tree-widget
     ;;  :tag ,(format "<- %S%s" (trace-node-result node) (trace-node-exit-context node))
     ;;  :icon nil)
@@ -163,7 +164,7 @@ With ARG, expand all top-level trace nodes."
   (when-let ((buf (get-buffer trace-buffer)))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
-       (erase-buffer))))
+        (erase-buffer))))
   (setq trace-results nil))
 
 ;;; XXX: widget interactions: untrace function/goto source
