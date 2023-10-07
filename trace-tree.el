@@ -108,9 +108,16 @@ be printed along with the arguments in the trace."
 
 
 ;; Override `trace-make-advice' to adapt tracing functions to create tree
-(advice-add 'trace-make-advice :override #'trace-tree-make-advice)
-;; (defalias 'trace-make-advice 'trace-tree-make-advice
-;;   "Override `trace-make-advice'")
+;;;###autoload
+(defun trace-tree-enable ()
+  "Override `trace-make-advice' to adapt tracing functions to create tree."
+  (interactive)
+  (advice-add 'trace-make-advice :override #'trace-tree-make-advice))
+
+(defun trace-tree-disable ()
+  "Remove overrides."
+  (interactive)
+  (advice-remove 'trace-make-advice #'trace-tree-make-advice))
 
 (defun trace-tree-render-trace (trace-result)
   (widget-create (trace-tree-render-node trace-result)))
