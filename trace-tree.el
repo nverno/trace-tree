@@ -4,7 +4,7 @@
 
 ;; Author: Noah Peart <noah.v.peart@gmail.com>
 ;; URL: https://github.com/nverno/trace-tree
-;; Package-Requires: 
+;; Package-Requires:
 ;; Created:  10 April 2023
 
 ;; This file is not part of GNU Emacs.
@@ -64,7 +64,7 @@
 
 (defun trace-tree-buffer (name)
   "Get trace output buffer."
-  (if-let (buf (get-buffer name))
+  (if-let* ((buf (get-buffer name)))
       buf
     (with-current-buffer (get-buffer-create name)
       (trace-tree-mode)
@@ -168,7 +168,7 @@ With ARG, expand all top-level trace nodes."
 (defun trace-tree-clear-results ()
   "Clear trace results."
   (interactive)
-  (when-let ((buf (get-buffer trace-buffer)))
+  (when-let* ((buf (get-buffer trace-buffer)))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer))))
